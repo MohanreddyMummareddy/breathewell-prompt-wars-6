@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {category,savings,guidance} from '../public/logic.js';
+test('US AQI category boundaries',()=>{for(const [value,label] of [[0,'Good'],[50,'Good'],[51,'Moderate'],[100,'Moderate'],[101,'Unhealthy for sensitive groups'],[150,'Unhealthy for sensitive groups'],[151,'Unhealthy'],[200,'Unhealthy'],[201,'Very unhealthy'],[300,'Very unhealthy'],[301,'Hazardous'],[500,'Hazardous']])assert.equal(category(value),label);for(const value of [-1,501,NaN,Infinity])assert.throws(()=>category(value));});
+test('carbon estimate reflects distance and days with no false health claim',()=>{assert.equal(savings(10,5),8.5);assert.equal(savings(0,5),0);assert.equal(savings(20,1),3.4);});
+const p={city:'Delhi',commute:10,aqi:186,sensitive:true,budget:'low'};
+test('polluted commutes avoid strenuous roadside exercise',()=>{assert.match(guidance(p,'commute'),/avoid strenuous roadside cycling/);assert.match(guidance(p,'commute'),/0.17 kg\/km/);});
+test('urgent symptoms trigger medical escalation',()=>assert.match(guidance(p,'chest pain'),/urgent local medical help/));
+test('plants are not recommended as filtration',()=>assert.match(guidance(p,'plants'),/not a substitute/));
+test('household and budget tailor default guidance',()=>{const answer=guidance(p);assert.match(answer,/Delhi/);assert.match(answer,/no-cost/);assert.match(answer,/children/);});
