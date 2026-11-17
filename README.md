@@ -8,6 +8,12 @@ A responsive, accessible clean-air companion for families and communities. Inclu
 
 Environmental health and sustainable urban living: helping families and communities navigate severe winter smog and everyday urban air pollution. The application connects practical exposure-reduction guidance with lower-emission routines and explains the distinct benefits of each.
 
+### Supported audience and location selection
+
+This submission focuses on India. The provided problem statement requests location-tailored guidance and does not specify mandatory global coverage; no additional official event rules were supplied. International coverage is not claimed.
+
+Users select from 54 Indian city centres or enter a six-digit PIN code and choose a matching post office. PIN lookup uses the [Pincode API directory](https://pincodeapi.in/docs/) through `/api/locations`. Only locations with available coordinates are selectable. Unknown PINs, missing coordinates, and provider outages produce explicit messages; users can still choose a listed city. Directory coordinates are approximate, and modeled air data does not represent a street-level sensor. PIN codes are sent to the directory when lookup is requested; selected coordinates are sent to Open-Meteo when air is refreshed. Selection is saved in browser storage.
+
 ## Approach and logic
 
 1. Capture a city, daily commute distance, household budget, and whether the household includes sensitive people. No precise address is required.

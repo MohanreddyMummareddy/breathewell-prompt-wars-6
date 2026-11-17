@@ -1,6 +1,6 @@
 # Verification results
 
-- `npm test`: 13 tests passed, 0 failed. Includes Indian CPCB categories, pollutant interpolation, 24-hour completeness requirements, mocked Gemini authentication, response extraction, sanitized errors, and model-path validation. The runner uses in-process test isolation because child-process spawning is restricted in this workspace.
+- `npm test`: 17 tests passed, 0 failed. Includes Indian CPCB categories, pollutant interpolation, 24-hour completeness requirements, Gemini request/error handling, PIN validation, missing postal coordinates, directory errors, and curated city coordinates. The runner uses in-process test isolation because child-process spawning is restricted in this workspace.
 - `npm run check`: server and browser JavaScript syntax checks passed.
 - HTTP smoke checks: `/`, `/app.js`, `/style.css`, `/logic.js` returned 200 with correct content types.
 - Assistant endpoint returned 200 with personalized, explicitly labeled local guidance.

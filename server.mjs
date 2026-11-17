@@ -2,6 +2,7 @@ import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { resolve, extname } from 'node:path';
 import chat from './lib/chat.mjs';
+import locationsHandler from './lib/locations.mjs';
 try { process.loadEnvFile(); } catch (error) {
  if (error.code !== 'ENOENT') {
   console.error('Could not load .env. Check its format and file permissions.');
@@ -15,6 +16,7 @@ const server = http.createServer(async (req,res) => {
  res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');
  res.setHeader('Content-Security-Policy',"default-src 'self'; connect-src 'self' https://geocoding-api.open-meteo.com https://air-quality-api.open-meteo.com; style-src 'self'; script-src 'self'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'");
  try {
+ if(new URL(req.url,'http://localhost').pathname === '/api/locations') return locationsHandler(req,res);
  if(req.url === '/api/chat' && req.method === 'POST') {
   return chat(req,res);
  }
