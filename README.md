@@ -11,7 +11,7 @@ Environmental health and sustainable urban living: helping families and communit
 1. Capture a city, daily commute distance, household budget, and whether the household includes sensitive people. No precise address is required.
 2. Start with explicitly labeled illustrative conditions. On request, resolve the city using Open-Meteo and fetch modeled US AQI. Classify it using US AQI thresholds, keeping the data label and timestamp visible.
 3. Offer actions across daily travel, indoor pollution source reduction, and community participation. Let users track completion locally and export a plan.
-4. Tailor assistant responses using the current household profile and question. With a server-side OpenAI key, use the Responses API; otherwise return transparent, safety-aware local guidance. Urgent symptom keywords take a conservative local escalation path before any AI request.
+4. Tailor assistant responses using the current household profile and question. With a server-side Google Gemini key, use the generateContent API; otherwise return transparent, safety-aware local guidance. Urgent symptom keywords take a conservative local escalation path before any AI request.
 5. Explain carbon savings with a visible formula, while describing exposure benefits qualitatively rather than inventing health outcomes.
 
 ## How the solution works
@@ -52,11 +52,15 @@ npm start
 Open http://localhost:3000. To enable GenAI, set a server-only key before starting:
 
 ```powershell
-$env:OPENAI_API_KEY = 'your-key'
+$env:GEMINI_API_KEY = 'your-key'
 npm start
 ```
 
-Optional `OPENAI_MODEL` (default `gpt-4.1-mini`) and `PORT`. `.env.example` documents settings; `.env` files are not loaded automatically. Without a key or when the provider fails, the app explicitly labels its deterministic local guidance. AI replies are single-turn and use current household context.
+Alternatively, copy `.env.example` to `.env` and enter your key there. The server automatically loads `.env` at startup; restart after changing it. Existing shell environment variables take precedence. Keep actual keys only in `.env`, never in the committed `.env.example` template.
+
+Get a Gemini key from [Google AI Studio](https://aistudio.google.com/apikey). `GOOGLE_API_KEY` is also accepted; `GEMINI_API_KEY` takes precedence. The server uses Google's [generateContent REST API](https://ai.google.dev/api/generate-content) with header-based authentication. Set `GEMINI_MODEL` to a model available to your Google project if needed.
+
+Optional `GEMINI_MODEL` (default `gemini-3.8-flash`) and `PORT`. If the port is already in use, stop the existing server with Ctrl+C in its terminal, or change `PORT` in `.env` (for example, `3001`). Without a key or when the provider fails, the app explicitly labels its deterministic local guidance. AI replies are single-turn and use current household context.
 
 ## Verify
 
@@ -70,7 +74,7 @@ Tests cover AQI boundaries, invalid values, emissions assumptions, safety routin
 ## Data, security, and limits
 
 - Initial AQI 186 is illustrative, never presented as current. Refresh fetches modeled US AQI through Open-Meteo geocoding and CAMS air-quality APIs. Modeled data is not a neighborhood sensor reading or India's AQI scale. Failed refreshes retain the previous reading and label. Sources: https://open-meteo.com/en/docs/air-quality-api and https://open-meteo.com/en/docs/geocoding-api . Data attribution: Open-Meteo and Copernicus Atmosphere Monitoring Service (CAMS).
-- Preferences and daily completion are stored on this browser only. No database or analytics. City is sent to Open-Meteo on refresh. Assistant requests send the current question and profile to this local server, and to OpenAI only when configured. Avoid sharing personal medical information.
+- Preferences and daily completion are stored on this browser only. No database or analytics. City is sent to Open-Meteo on refresh. Assistant requests send the current question and profile to this local server, and to Google Gemini only when configured. Avoid sharing personal medical information.
 - AI keys remain server-side; untrusted responses render as text. Request body limits, input validation, upstream timeouts, path containment, and security headers are included. The server binds to loopback by default. Add authentication and rate limiting before exposing an AI endpoint publicly.
 - Carbon figures are illustrative net savings of 0.17 kg CO₂/km for replacing solo petrol-car travel with transit, not measured outcomes. The calculator states assumptions. Emissions savings do not quantify personal exposure or health outcomes.
 - Guidance is general education, not diagnosis. Sources: https://www.airnow.gov/wildfires/when-smoke-is-in-the-air/ and https://www.epa.gov/wildfires/how-create-cleaner-air-room-home . Local official advisories and clinical care plans take priority.
@@ -78,4 +82,4 @@ Tests cover AQI boundaries, invalid values, emissions assumptions, safety routin
 
 ## Architecture
 
-`server.mjs`: dependency-free static server and optional OpenAI Responses API adapter. `public/logic.js`: testable safety-aware fallback and calculator. `public/app.js`: UI and external air data. `public/style.css`: responsive design. `test/`: Node test runner coverage. No build step.
+`server.mjs`: dependency-free static server and optional Google Gemini API adapter. `public/logic.js`: testable safety-aware fallback and calculator. `public/app.js`: UI and external air data. `public/style.css`: responsive design. `test/`: Node test runner coverage. No build step.

@@ -1,6 +1,6 @@
 # Verification results
 
-- `npm test`: 6 tests passed, 0 failed. The runner uses in-process test isolation because child-process spawning is restricted in this workspace.
+- `npm test`: 10 tests passed, 0 failed. Includes mocked Gemini request authentication, context serialization, response extraction, failure handling, and model-path validation. The runner uses in-process test isolation because child-process spawning is restricted in this workspace.
 - `npm run check`: server and browser JavaScript syntax checks passed.
 - HTTP smoke checks: `/`, `/app.js`, `/style.css`, `/logic.js` returned 200 with correct content types.
 - Assistant endpoint returned 200 with personalized, explicitly labeled local guidance.
