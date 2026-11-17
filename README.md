@@ -1,5 +1,7 @@
 # Breathewell — Prompt Wars 6
 
+Live application: https://breathewell-prompt-wars-6.vercel.app
+
 A responsive, accessible clean-air companion for families and communities. Includes personalized routines, a daily checklist, indoor-air toolkit, an illustrative carbon calculator, city-based modeled air-quality lookup, and an optional GenAI assistant.
 
 ## Chosen vertical
@@ -81,5 +83,7 @@ Tests cover AQI boundaries, invalid values, emissions assumptions, safety routin
 - Accessibility: semantic regions, skip link, native controls and modal dialog, visible focus, text status labels, live assistant messages, reduced reliance on color, responsive layouts. Full assistive-technology/browser review is still recommended.
 
 ## Architecture
+
+Vercel serves `public/` as static assets and routes `/api/chat` to `api/chat.js`, which shares `lib/chat.mjs` with the local server. Set `GEMINI_API_KEY` and `GEMINI_MODEL` in Vercel production environment variables, then redeploy. Local `.env` files are excluded from deployment uploads by `.vercelignore`.
 
 `server.mjs`: dependency-free static server and optional Google Gemini API adapter. `public/logic.js`: testable safety-aware fallback and calculator. `public/app.js`: UI and external air data. `public/style.css`: responsive design. `test/`: Node test runner coverage. No build step.
