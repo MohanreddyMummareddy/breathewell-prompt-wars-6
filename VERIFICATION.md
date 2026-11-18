@@ -4,7 +4,7 @@
 
 - Automated suite: 49 regression tests covering AQI, personalization, storage, postal lookup, provider behavior, HTTP security boundaries, static delivery, rendered controls, text safety, and application startup.
 - `npm run validate` passed: syntax checks for all JavaScript, ESLint, Prettier, and all 49 regression tests.
-- `npm run test:coverage`: executed application-source coverage report (test files excluded); this does not establish full browser or assistive-technology coverage.
+- `npm run test:coverage`: application-source coverage is 78.29% of lines, 89.16% of branches, and 70.09% of functions (test files excluded). This does not establish full browser or assistive-technology coverage.
 - All development packages are exact-version locked. No runtime dependencies are introduced.
 - [Architecture review](docs/ARCHITECTURE.md) documents responsibility boundaries, substitution contracts, and deployment limits.
 - [Evaluation review](docs/QUALITY_REVIEW.md) records the observed baseline issues and maps requirements to implementation/tests.
@@ -13,7 +13,7 @@
 
 Production: https://breathewell-prompt-wars-6.vercel.app
 
-The earlier deployed version was verified for homepage delivery, PIN lookup, Indian AQI labels, and a live Gemini-generated response. The quality revision must pass the same live HTTP checks after deployment.
+The quality revision was verified live: homepage HTTP 200, PIN 517501 returned seven matching locations, and the assistant returned Gemini-generated guidance. GitHub Actions passed for implementation commit d1d21ed. Node HTTPS initially timed out from this workstation; the checks succeeded through the Windows HTTPS client.
 
 ## Known verification limits
 
