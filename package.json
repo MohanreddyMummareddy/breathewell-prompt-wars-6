@@ -1,1 +1,27 @@
-{"name":"breathewell","version":"1.0.0","private":true,"type":"module","scripts":{"start":"node server.mjs","dev":"node server.mjs","test":"node --test --experimental-test-isolation=none","check":"node --check server.mjs && node --check public/app.js"},"engines":{"node":">=22"}}
+{
+  "name": "breathewell",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node server.mjs",
+    "test": "node --test --experimental-test-isolation=none",
+    "check": "node scripts/check-syntax.mjs",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "validate": "npm run check && npm run lint && npm run format:check && npm test",
+    "test:coverage": "node --test --experimental-test-isolation=none --experimental-test-coverage --test-coverage-exclude=test/**"
+  },
+  "engines": {
+    "node": "22.x"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.15.0",
+    "globals": "17.14.0",
+    "linkedom": "0.18.15",
+    "prettier": "3.10.1"
+  }
+}

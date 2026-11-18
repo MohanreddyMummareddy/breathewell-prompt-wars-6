@@ -1,34 +1,265 @@
-import {configureLocation,selectedLocation} from './location-picker.js';
-import {cities,validCoordinates} from './locations.js';
-import { category, savings, guidance, indianAqiEstimate } from './logic.js';
-const $=s=>document.querySelector(s);
-const defaults={place:cities.find(p=>p.name==='New Delhi'),city:'New Delhi',commute:10,budget:'low',sensitive:true,aqi:186,lowerBound:false,airDataKind:'Illustrative data'};
-let profile={...defaults}, completed=[];
-try{const p=JSON.parse(localStorage.getItem('breathewell-profile'));if(p&&typeof p.city==='string'&&p.city.length<=100&&Number.isFinite(p.commute)&&p.commute>=0&&p.commute<=200)profile={...defaults,...p,place:validCoordinates(p.place)?p.place:cities.find(c=>c.name===p.city||`${c.name}, ${c.state}`===p.city),aqi:186,lowerBound:false,airDataKind:'Illustrative data'};const c=JSON.parse(localStorage.getItem('breathewell-actions'));if(c?.date===new Date().toDateString()&&Array.isArray(c.ids))completed=c.ids;}catch{}
-const actions=[{id:'move',type:'outdoor',icon:'↗',tag:'SMARTER ROUTINES',title:'Move your movement indoors',text:'Swap the roadside run for a gentle stretch in a cleaner-air room on polluted days.',benefit:'Less time breathing roadside particles',detail:'Plan a short stretch or gentle movement session in a filtered indoor space. When outdoor air improves, revisit your routine using current local guidance.'},{id:'room',type:'indoor',icon:'⌂',tag:'A HEALTHIER HOME',title:'Give one room a fresh start',text:'Skip the incense. Damp-dust surfaces. Make your most-used room a cleaner-air space.',benefit:'Fewer indoor pollution sources',detail:'Avoid candles and incense, damp-dust settled particles, and run an appropriately sized ozone-free particle filter if available. Do not block required gas-appliance ventilation.'},{id:'share',type:'community',icon:'♧',tag:'BETTER TOGETHER',title:'Share the ride, share the good',text:'Coordinate a carpool or choose public transport. One shared journey can go a little further.',benefit:'Fewer solo vehicle trips',detail:'Ask your household or neighbors to coordinate a shared trip. Avoid idling at pickups. Public transport carbon savings depend on occupancy and route.'},{id:'commute',type:'outdoor',icon:'↘',tag:'LOWER EMISSIONS',title:'Choose a lower-emission commute',text:'Replace a solo petrol-car trip with practical public transport.',benefit:'A smaller travel footprint',detail:'Use enclosed public transport when practical. Avoid strenuous roadside travel in unhealthy air. Compare routes, accessibility, and current conditions before leaving.'}];
-function notify(s){$('#toast').textContent=s;$('#toast').style.display='block';clearTimeout(notify.timer);notify.timer=setTimeout(()=>$('#toast').style.display='none',4500);}
-function save(){try{localStorage.setItem('breathewell-profile',JSON.stringify(profile));localStorage.setItem('breathewell-actions',JSON.stringify({date:new Date().toDateString(),ids:completed}));}catch{notify('Device storage unavailable. Changes will last for this visit.');}}
-function toggle(id){completed=completed.includes(id)?completed.filter(x=>x!==id):[...completed,id];save();renderCards();renderPlan();$('#add-commute').textContent=completed.includes('commute')?'Added to your day ✓':'Add to my day ＋';}
-function renderCards(filter='all'){const container=$('#action-cards');container.replaceChildren();for(const a of actions.slice(0,3).filter(a=>filter==='all'||a.type===filter)){const card=document.createElement('article');card.className='action-card';card.innerHTML=`<div class="action-top"><span class="action-icon">${a.icon}</span><span class="tag">${a.tag}</span></div><h3>${a.title}</h3><p>${a.text}</p><div class="benefit">↗ ${a.benefit}</div><button>${completed.includes(a.id)?'Added to my day ✓':'Make this my next step'} <span>＋</span></button>`;card.querySelector('button').addEventListener('click',()=>toggle(a.id));container.append(card);}}
-function renderPlan(){const container=$('#plan-list');container.replaceChildren();for(const a of actions){const label=document.createElement('label');label.className='plan-item'+(completed.includes(a.id)?' done':'');const check=document.createElement('input');check.type='checkbox';check.checked=completed.includes(a.id);check.addEventListener('change',()=>toggle(a.id));const text=document.createElement('div');const title=document.createElement('strong');title.textContent=a.title;const p=document.createElement('p');p.textContent=a.detail;text.append(title,p);label.append(check,text);container.append(label);}}
-function aqiPosition(aqi){const edges=[0,50,100,200,300,400,500];const band=edges.slice(1).findIndex(edge=>aqi<=edge);return Math.min(99,(band+(aqi-edges[band])/(edges[band+1]-edges[band]))*100/6);}
-function renderProfile(){ $('#header-city').textContent=profile.city;$('#air-city').textContent=profile.city;$('#aqi-value').textContent=(profile.lowerBound?'\u2265':'')+Math.round(profile.aqi);$('#severity').textContent=category(profile.aqi);$('#scale-marker').style.left=aqiPosition(profile.aqi)+'%';$('#daily-saving').textContent=savings(profile.commute,1)+' kg CO₂';$('#daily-copy').textContent=`Consider public transport for your ${profile.commute} km daily journey. Less tailpipe pollution, and a little more breathing room for everyone.`;$('#air-advice').textContent=profile.aqi>100?'Take it easy outdoors. Prioritize a cleaner-air space and reduce strenuous outdoor activity.':'Check local advisories and enjoy outdoor time as conditions and your health allow.';$('#impact-km').value=Math.max(1,Math.min(100,profile.commute));updateImpact();}
-function page(name){for(const p of document.querySelectorAll('.page'))p.classList.toggle('hidden',p.id!==name+'-page');for(const b of document.querySelectorAll('.nav'))b.classList.toggle('active',b.dataset.page===name);$('#page-label').textContent={today:'My day',plan:'My action plan',indoor:'Indoor toolkit',impact:'My impact'}[name];}
-document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>page(b.dataset.page)));document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>page(b.dataset.go)));
-document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.chip').forEach(c=>{c.classList.toggle('selected',c===b);c.setAttribute('aria-pressed',String(c===b));});renderCards(b.dataset.filter);}));
-function openProfile(){configureLocation(profile);for(const [id,key] of [['commute-input','commute'],['budget-input','budget']])$('#'+id).value=profile[key];$('#sensitive-input').checked=profile.sensitive;$('#profile-dialog').showModal();}
-['profile-open','location-open','plan-profile'].forEach(id=>$('#'+id).addEventListener('click',openProfile));$('#profile-close').addEventListener('click',()=>$('#profile-dialog').close());
-$('#profile-form').addEventListener('submit',e=>{e.preventDefault();const place=selectedLocation();if(!place||!validCoordinates(place)){notify('Select a city or a matching post office first.');return;}const city=`${place.name}, ${place.state}`;const changed=city!==profile.city||place.latitude!==profile.place?.latitude||place.longitude!==profile.place?.longitude;profile={...profile,city,place,commute:Number($('#commute-input').value),budget:$('#budget-input').value,sensitive:$('#sensitive-input').checked};if(changed){profile.aqi=186;profile.lowerBound=false;profile.airDataKind='Illustrative data';$('#data-badge').textContent='Illustrative data';$('#air-time').textContent='Sample conditions · not a live reading';}save();renderProfile();$('#profile-dialog').close();notify('Preferences saved. Refresh local air for current conditions.');});$('#city-input').addEventListener('input',()=>$('#city-input').setCustomValidity(''));
-$('#date').textContent=new Intl.DateTimeFormat('en',{weekday:'short',day:'numeric',month:'long',timeZone:'Asia/Kolkata'}).format(new Date());
-$('#aqi-info').addEventListener('click',()=>notify('India CPCB AQI: 0-50 Good; 51-100 Satisfactory; 101-200 Moderately polluted; 201-300 Poor; 301-400 Very poor; 401-500 Severe. Refreshed values are estimates from modeled 24-hour pollutant averages, not official CPCB station readings.'));
-$('#add-commute').addEventListener('click',()=>toggle('commute'));
-$('#community-link').addEventListener('click',()=>page('impact'));
-function updateImpact(){const km=Number($('#impact-km').value),days=Number($('#impact-days').value);$('#km-output').textContent=km+' km';$('#days-output').textContent=days+' days';$('#impact-total').replaceChildren(document.createTextNode(savings(km,days)+' '));const small=document.createElement('small');small.textContent='kg';$('#impact-total').append(small);}
-$('#impact-km').addEventListener('input',updateImpact);$('#impact-days').addEventListener('input',updateImpact);
-$('#refresh-air').addEventListener('click',async()=>{const button=$('#refresh-air');button.disabled=true;button.textContent='Finding local air…';const requestedCity=profile.city,requestedPlace=profile.place;try{let place=profile.place;if(!validCoordinates(place)){const geo=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(requestedCity)}&count=5&countryCode=IN&language=en&format=json`,{signal:AbortSignal.timeout(10000)});if(!geo.ok)throw Error();place=(await geo.json()).results?.find(p=>p.country_code==='IN');if(!place)throw Error('City not found. Choose your location in household preferences.');}const response=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${place.latitude}&longitude=${place.longitude}&hourly=pm2_5,pm10,nitrogen_dioxide,sulphur_dioxide&past_days=2&forecast_days=1&timezone=GMT`,{signal:AbortSignal.timeout(10000)});if(!response.ok)throw Error();const data=await response.json();if(profile.city!==requestedCity||profile.place!==requestedPlace)return;const endTime=new Date(Math.floor(Date.now()/3600000)*3600000).toISOString().slice(0,19);const estimate=indianAqiEstimate(data.hourly,endTime);profile.aqi=estimate.aqi;profile.lowerBound=estimate.lowerBound;profile.airDataKind='Modeled Indian AQI estimate';renderProfile();$('#header-city').textContent=`${place.name}, India`;$('#data-badge').textContent='CPCB-scale estimate';$('#air-time').textContent=`24h to ${endTime.replace('T',' ')} UTC ? Open-Meteo/CAMS ? ${Object.keys(estimate.subIndices).length} pollutants`;notify('Indian AQI estimate from modeled 24-hour PM2.5, PM10, NO2 and SO2. Not official CPCB station data; other pollutants may raise the index. Severe values show a lower bound.');}catch(e){notify(e.message.startsWith('City not')?e.message:'Air data unavailable. Previous reading remains; check its data label.');}finally{button.disabled=false;button.textContent='↻ Refresh local air';}});
-function openChat(){$('#chat').classList.remove('hidden');$('#question').focus();}$('#chat-toggle').addEventListener('click',openChat);$('#ask-open').addEventListener('click',openChat);$('#chat-close').addEventListener('click',()=>{$('#chat').classList.add('hidden');$('#chat-toggle').focus();});document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#chat').classList.add('hidden');});
-function message(text,type){const el=document.createElement('div');el.className='message '+type;el.textContent=text;$('#messages').append(el);el.scrollIntoView({block:'nearest'});return el;}
-let busy=false;async function ask(question){if(busy||!question.trim())return;busy=true;message(question,'user');const pending=message('Thinking through your day…','bot');$('#chat-form button').disabled=true;try{const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({profile,question}),signal:AbortSignal.timeout(25000)});if(!response.ok)throw Error();const result=await response.json();pending.textContent=result.answer;if(result.diagnostic){const d=result.diagnostic;message(`Gemini error${d.httpStatus?' HTTP '+d.httpStatus:''}: ${d.code}. ${d.message}${d.model?' Model: '+d.model:''}`,'bot');}$('#chat-mode').textContent=result.mode+' · General guidance, not medical advice';}catch{pending.textContent=guidance(profile,question);$('#chat-mode').textContent='Local guidance · AI unavailable';}finally{busy=false;$('#chat-form button').disabled=false;}}
-$('#chat-form').addEventListener('submit',e=>{e.preventDefault();const q=$('#question').value;$('#question').value='';ask(q);});document.querySelectorAll('[data-question]').forEach(b=>b.addEventListener('click',()=>ask(b.dataset.question)));
-$('#download-plan').addEventListener('click',()=>{const content=`Breathewell daily plan — ${profile.city}\nData: ${$('#data-badge').textContent}; Indian AQI ${profile.aqi}\n\n`+actions.map(a=>`${completed.includes(a.id)?'[x]':'[ ]'} ${a.title}\n${a.detail}`).join('\n\n')+'\n\nGeneral guidance. Source: https://www.airnow.gov/wildfires/when-smoke-is-in-the-air/';const url=URL.createObjectURL(new Blob([content],{type:'text/plain'}));const a=document.createElement('a');a.href=url;a.download='breathewell-daily-plan.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
-renderProfile();renderCards();renderPlan();
+import { configureLocation, selectedLocation } from './location-picker.js';
+import { category } from './domain/air-quality.js';
+import { savings } from './domain/impact.js';
+import { cleanPreferences } from './domain/profile.js';
+import { buildPlan } from './domain/recommendations.js';
+import { createStorage } from './state/storage.js';
+import { createAirQualityService } from './services/air-quality.js';
+import { renderActionCards, renderActionPlan } from './features/actions.js';
+import { initializeAssistant } from './features/assistant.js';
+import { $, element } from './ui/dom.js';
+
+let browserStorage;
+try {
+  browserStorage = window.localStorage;
+} catch {
+  /* Private browsers can disable storage. */
+}
+const storage = createStorage(browserStorage);
+const restored = storage.load();
+let profile = { ...restored.profile, aqi: null, lowerBound: false, airDataKind: 'Not checked' };
+let completed = restored.completed;
+let filter = 'all';
+let actions = buildPlan(profile);
+const airService = createAirQualityService();
+let airVersion = 0;
+
+function notify(text) {
+  $('#toast').textContent = text;
+  $('#toast').style.display = 'block';
+  clearTimeout(notify.timer);
+  notify.timer = setTimeout(() => {
+    $('#toast').style.display = 'none';
+  }, 7000);
+}
+
+function save() {
+  if (!storage.save(profile, completed))
+    notify('Device storage is unavailable. Changes last for this visit.');
+}
+
+function toggleAction(id) {
+  const focusId = document.activeElement?.id;
+  completed = completed.includes(id)
+    ? completed.filter((value) => value !== id)
+    : [...completed, id];
+  save();
+  renderActions();
+  if (focusId) document.getElementById(focusId)?.focus();
+}
+
+function renderActions() {
+  actions = buildPlan(profile);
+  renderActionCards(actions, completed, filter, toggleAction);
+  renderActionPlan(actions, completed, toggleAction);
+  const commute = actions.find((action) => action.id === 'commute');
+  $('#daily-title').textContent = commute.title;
+  $('#daily-copy').textContent = commute.text;
+  $('#daily-saving').textContent =
+    commute.potentialCarbonKg === null
+      ? 'Fewer unnecessary trips'
+      : `${commute.potentialCarbonKg} kg CO₂`;
+  $('#daily-assumption').textContent =
+    commute.potentialCarbonKg === null
+      ? 'No carbon saving claimed without a matching baseline'
+      : 'Potential saving per solo-car trip replaced · 0.17 kg CO₂/km';
+  $('#add-commute').textContent = completed.includes('commute')
+    ? 'Added to your day ✓'
+    : 'Add to my day +';
+  $('#add-commute').setAttribute('aria-pressed', String(completed.includes('commute')));
+  $('#plan-progress').textContent =
+    `${completed.length} of ${actions.length} actions marked complete today. Completion is self-reported, not a measured exposure or emissions reduction.`;
+}
+
+function aqiPosition(aqi) {
+  const edges = [0, 50, 100, 200, 300, 400, 500];
+  const band = edges.slice(1).findIndex((edge) => aqi <= edge);
+  return Math.min(99, ((band + (aqi - edges[band]) / (edges[band + 1] - edges[band])) * 100) / 6);
+}
+
+function renderProfile() {
+  const known = Number.isFinite(profile.aqi);
+  $('#header-city').textContent = profile.city;
+  $('#air-city').textContent = profile.city;
+  $('#aqi-value').textContent = known
+    ? `${profile.lowerBound ? '≥' : ''}${Math.round(profile.aqi)}`
+    : '—';
+  $('#severity').textContent = known ? category(profile.aqi) : 'Not checked';
+  $('#scale-marker').hidden = !known;
+  if (known) $('#scale-marker').style.left = aqiPosition(profile.aqi) + '%';
+  $('#data-badge').textContent = known ? 'CPCB-scale estimate' : 'No reading loaded';
+  $('#air-advice').textContent = known
+    ? `24-hour modeled estimate. ${profile.aqi > 200 || (profile.sensitive && profile.aqi > 100) ? 'Prioritize cleaner indoor air and reduce strenuous roadside activity.' : 'Check official advisories before outdoor activity.'}`
+    : 'Refresh local air for your selected place. Your plan uses precautions until a reading is available.';
+  $('#air-time').textContent = profile.endTime
+    ? `24h to ${profile.endTime.replace('T', ' ').slice(0, 19)} UTC · Open-Meteo/CAMS · ${Object.keys(profile.subIndices).length} pollutants`
+    : 'No measurement claimed. Select your place and refresh.';
+  $('#impact-km').value = Math.min(100, Math.max(1, profile.commute));
+  updateImpact();
+  renderActions();
+}
+
+function navigate(name) {
+  for (const section of document.querySelectorAll('.page'))
+    section.classList.toggle('hidden', section.id !== `${name}-page`);
+  for (const button of document.querySelectorAll('.nav')) {
+    const active = button.dataset.page === name;
+    button.classList.toggle('active', active);
+    if (active) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+  }
+  $('#page-label').textContent = {
+    today: 'My day',
+    plan: 'My action plan',
+    indoor: 'Indoor toolkit',
+    impact: 'My impact',
+  }[name];
+  const heading = $(`#${name}-page`).querySelector('h2');
+  if (heading) {
+    heading.tabIndex = -1;
+    heading.focus();
+  }
+}
+
+document
+  .querySelectorAll('[data-page]')
+  .forEach((button) => button.addEventListener('click', () => navigate(button.dataset.page)));
+document
+  .querySelectorAll('[data-go]')
+  .forEach((button) => button.addEventListener('click', () => navigate(button.dataset.go)));
+document.querySelectorAll('[data-filter]').forEach((button) => {
+  button.setAttribute('aria-pressed', String(button.dataset.filter === filter));
+  button.addEventListener('click', () => {
+    filter = button.dataset.filter;
+    document.querySelectorAll('.chip').forEach((chip) => {
+      chip.classList.toggle('selected', chip === button);
+      chip.setAttribute('aria-pressed', String(chip === button));
+    });
+    renderActions();
+  });
+});
+
+function openPreferences() {
+  configureLocation(profile);
+  for (const [id, key] of [
+    ['commute-input', 'commute'],
+    ['budget-input', 'budget'],
+    ['travel-input', 'travelMode'],
+    ['cooking-input', 'cooking'],
+  ])
+    $('#' + id).value = profile[key];
+  $('#sensitive-input').checked = profile.sensitive;
+  $('#purifier-input').checked = profile.purifier;
+  $('#profile-dialog').showModal();
+}
+
+['profile-open', 'location-open', 'plan-profile'].forEach((id) =>
+  $('#' + id).addEventListener('click', openPreferences),
+);
+$('#profile-close').addEventListener('click', () => $('#profile-dialog').close());
+$('#profile-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+  const place = selectedLocation();
+  if (!place) {
+    notify('Select your city or matching post office first.');
+    return;
+  }
+  const next = cleanPreferences({
+    city: `${place.name}, ${place.state}`,
+    place,
+    commute: Number($('#commute-input').value),
+    budget: $('#budget-input').value,
+    sensitive: $('#sensitive-input').checked,
+    purifier: $('#purifier-input').checked,
+    travelMode: $('#travel-input').value,
+    cooking: $('#cooking-input').value,
+  });
+  const changed =
+    next.place?.latitude !== profile.place?.latitude ||
+    next.place?.longitude !== profile.place?.longitude;
+  if (changed) {
+    airVersion++;
+    airService.cancel();
+    profile = { ...next, aqi: null, lowerBound: false, airDataKind: 'Not checked' };
+  } else profile = { ...profile, ...next };
+  save();
+  renderProfile();
+  $('#profile-dialog').close();
+  notify('Preferences saved. Your routines and impact explanations have been updated.');
+});
+
+async function refreshAir() {
+  const version = ++airVersion,
+    place = profile.place;
+  const button = $('#refresh-air');
+  button.disabled = true;
+  button.textContent = 'Checking local air…';
+  $('#air-status').textContent = 'Loading modeled air conditions…';
+  try {
+    const reading = await airService.refresh(place);
+    if (version !== airVersion) return;
+    profile = { ...profile, ...reading };
+    renderProfile();
+    $('#air-status').textContent =
+      'Updated. This is a modeled estimate, not an official CPCB station reading.';
+  } catch (error) {
+    if (version !== airVersion || error.name === 'AbortError') return;
+    $('#air-status').textContent =
+      error.name === 'TimeoutError' ? 'Air data request timed out. Please retry.' : error.message;
+  } finally {
+    button.disabled = false;
+    button.textContent = '↻ Refresh local air';
+  }
+}
+$('#refresh-air').addEventListener('click', () => {
+  void refreshAir();
+});
+$('#aqi-info').addEventListener('click', () => {
+  const details = $('#aqi-explanation');
+  details.hidden = !details.hidden;
+  $('#aqi-info').setAttribute('aria-expanded', String(!details.hidden));
+});
+$('#add-commute').addEventListener('click', () => toggleAction('commute'));
+$('#community-link').addEventListener('click', () => navigate('impact'));
+
+function updateImpact() {
+  const km = Number($('#impact-km').value),
+    days = Number($('#impact-days').value);
+  $('#km-output').textContent = `${km} km`;
+  $('#days-output').textContent = `${days} days`;
+  $('#impact-total').replaceChildren(
+    document.createTextNode(`${savings(km, days)} `),
+    element('small', '', 'kg'),
+  );
+}
+$('#impact-km').addEventListener('input', updateImpact);
+$('#impact-days').addEventListener('input', updateImpact);
+
+$('#download-plan').addEventListener('click', () => {
+  const condition =
+    profile.aqi === null ? 'Not checked' : `${profile.lowerBound ? 'at least ' : ''}${profile.aqi}`;
+  const content =
+    `Breathewell daily plan — ${profile.city}\nIndian AQI: ${condition}; ${profile.airDataKind}\n\n` +
+    actions
+      .map(
+        (action) =>
+          `${completed.includes(action.id) ? '[x]' : '[ ]'} ${action.title}\n${action.text}\nWhy for you: ${action.reason}\nDirect impact: ${action.impact}\nSource: ${action.source}`,
+      )
+      .join('\n\n') +
+    '\n\nGeneral guidance, not medical advice. Completion is self-reported. Model estimates are not official station readings.';
+  const url = URL.createObjectURL(new Blob([content], { type: 'text/plain;charset=utf-8' }));
+  const link = element('a');
+  link.href = url;
+  link.download = 'breathewell-daily-plan.txt';
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+
+$('#date').textContent = new Intl.DateTimeFormat('en-IN', {
+  weekday: 'short',
+  day: 'numeric',
+  month: 'long',
+  timeZone: 'Asia/Kolkata',
+}).format(new Date());
+initializeAssistant(() => profile);
+renderProfile();

@@ -17,7 +17,7 @@ Users select from 54 Indian city centres or enter a six-digit PIN code and choos
 ## Approach and logic
 
 1. Capture a city, daily commute distance, household budget, and whether the household includes sensitive people. No precise address is required.
-2. Start with explicitly labeled illustrative conditions. On request, resolve the city using Open-Meteo and fetch modeled pollutant concentrations. Calculate an Indian CPCB-scale AQI estimate from trailing 24-hour PM2.5, PM10, NO2, and SO2 averages, keeping the data label and timestamp visible.
+2. Start with an explicit not-checked state. On request, resolve the city using Open-Meteo and fetch modeled pollutant concentrations. Calculate an Indian CPCB-scale AQI estimate from trailing 24-hour PM2.5, PM10, NO2, and SO2 averages, keeping the data label and timestamp visible.
 3. Offer actions across daily travel, indoor pollution source reduction, and community participation. Let users track completion locally and export a plan.
 4. Tailor assistant responses using the current household profile and question. With a server-side Google Gemini key, use the generateContent API; otherwise return transparent, safety-aware local guidance. Urgent symptom keywords take a conservative local escalation path before any AI request.
 5. Explain carbon savings with a visible formula, while describing exposure benefits qualitatively rather than inventing health outcomes.
@@ -30,7 +30,7 @@ The browser loads a dependency-free HTML/CSS/JavaScript dashboard from a small N
 
 - Users provide a city rather than an exact address; regional modeled conditions can differ from street-level pollution.
 - India CPCB categories are used: Good, Satisfactory, Moderately polluted, Poor, Very poor, and Severe. Estimates require at least three pollutants including PM2.5 or PM10 and at least 16 hourly values per pollutant. Severe concentrations return a lower bound of 401 rather than an invented exact value.
-- The initial AQI of 186 is demonstration data, not a live observation.
+- No sample AQI drives the plan; unknown conditions produce precautions until a reading is loaded.
 - Daily commute distance means the full round trip. Carbon savings use an illustrative net saving of 0.17 kg CO2/km when replacing solo petrol-car travel with public transport; this is a scenario assumption rather than a universal emissions factor.
 - General advice cannot replace local official alerts, clinical care, or assessment of household ventilation and appliance safety.
 - Local browser storage is available for persistence; the app remains usable for the current visit when storage is unavailable.
@@ -38,20 +38,20 @@ The browser loads a dependency-free HTML/CSS/JavaScript dashboard from a small N
 
 ## Evaluation focus areas
 
-| Criterion | Implementation and evidence |
-| --- | --- |
-| Code quality | Separate server, UI, styling, and pure guidance/calculation logic; no build tool or runtime dependencies. |
-| Security | Server-only secrets, input and body-size validation, path containment, response security headers, upstream timeouts, text-only response rendering. |
-| Efficiency | Lightweight static assets, no framework bundle, no background polling, air data fetched only on request. |
-| Testing | Automated AQI boundary, invalid input, calculation, safety, and personalization tests; HTTP smoke checks documented in `VERIFICATION.md`. |
-| Accessibility | Semantic landmarks, skip navigation, labeled native controls, modal dialog, visible keyboard focus, text data labels, live assistant messages, responsive layouts. Browser and assistive-technology verification remains pending. |
-| Problem alignment | Location/lifestyle context, low-emission commuting, indoor source reduction, community actions, and transparent explanations of impact. |
+| Criterion         | Implementation and evidence                                                                                                                                                                                                       |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Code quality      | Separate server, UI, styling, and pure guidance/calculation logic; no build tool or runtime dependencies.                                                                                                                         |
+| Security          | Server-only secrets, input and body-size validation, path containment, response security headers, upstream timeouts, text-only response rendering.                                                                                |
+| Efficiency        | Lightweight static assets, no framework bundle, no background polling, air data fetched only on request.                                                                                                                          |
+| Testing           | Automated AQI boundary, invalid input, calculation, safety, and personalization tests; HTTP smoke checks documented in `VERIFICATION.md`.                                                                                         |
+| Accessibility     | Semantic landmarks, skip navigation, labeled native controls, modal dialog, visible keyboard focus, text data labels, live assistant messages, responsive layouts. Browser and assistive-technology verification remains pending. |
+| Problem alignment | Location/lifestyle context, low-emission commuting, indoor source reduction, community actions, and transparent explanations of impact.                                                                                           |
 
 No evaluation-tier mapping was supplied, so the project does not invent which criteria are High, Medium, or Low Impact.
 
 ## Run
 
-Requires Node.js 22+. No package installation required.
+Requires Node.js 22+. The application has no runtime package dependencies. For quality checks and tests, install development tools with `npm ci`.
 
 ```powershell
 npm start
@@ -81,9 +81,9 @@ Tests cover AQI boundaries, invalid values, emissions assumptions, safety routin
 
 ## Data, security, and limits
 
-- Initial AQI 186 is illustrative, never presented as current. Refresh calculates an Indian CPCB-scale estimate from modeled 24-hour pollutant means through Open-Meteo/CAMS. It is not an official CPCB station reading; unmodeled pollutants can raise actual AQI. City search is restricted to India. Failed refreshes retain the previous reading and label. Sources: https://open-meteo.com/en/docs/air-quality-api and https://open-meteo.com/en/docs/geocoding-api . Data attribution: Open-Meteo and Copernicus Atmosphere Monitoring Service (CAMS).
-- Preferences and daily completion are stored on this browser only. No database or analytics. City is sent to Open-Meteo on refresh. Assistant requests send the current question and profile to this local server, and to Google Gemini only when configured. Avoid sharing personal medical information.
-- AI keys remain server-side; untrusted responses render as text. Request body limits, input validation, upstream timeouts, path containment, and security headers are included. The server binds to loopback by default. Add authentication and rate limiting before exposing an AI endpoint publicly.
+- No AQI is displayed at startup; air conditions stay unknown until refreshed. Refresh calculates an Indian CPCB-scale estimate from modeled 24-hour pollutant means through Open-Meteo/CAMS. It is not an official CPCB station reading; unmodeled pollutants can raise actual AQI. City search is restricted to India. Failed refreshes retain the previous reading and label. Sources: https://open-meteo.com/en/docs/air-quality-api and https://open-meteo.com/en/docs/geocoding-api . Data attribution: Open-Meteo and Copernicus Atmosphere Monitoring Service (CAMS).
+- Preferences and daily completion are stored on this browser only. No database or analytics. Selected coordinates are sent to Open-Meteo on refresh. Assistant requests send the current question and allowlisted city/lifestyle context to the server, and to Google Gemini only when configured. Coordinates and PIN are excluded from the Gemini payload. Avoid sharing personal medical information.
+- AI keys remain server-side; untrusted responses render as text. Request body limits, input validation, upstream timeouts, path containment, and security headers are included. The server binds to loopback by default. A bounded per-instance limiter and same-origin browser guard are included. Configure distributed deployment limits and provider budget controls for high-volume public use.
 - Carbon figures are illustrative net savings of 0.17 kg CO₂/km for replacing solo petrol-car travel with transit, not measured outcomes. The calculator states assumptions. Emissions savings do not quantify personal exposure or health outcomes.
 - Guidance is general education, not diagnosis. Sources: https://www.airnow.gov/wildfires/when-smoke-is-in-the-air/ and https://www.epa.gov/wildfires/how-create-cleaner-air-room-home . Local official advisories and clinical care plans take priority.
 - Accessibility: semantic regions, skip link, native controls and modal dialog, visible focus, text status labels, live assistant messages, reduced reliance on color, responsive layouts. Full assistive-technology/browser review is still recommended.
@@ -99,3 +99,19 @@ Vercel serves `public/` as static assets and routes `/api/chat` to `api/chat.js`
 Indian calculation reference: [Government of India National AQI explanation](https://ies.gov.in/arthapedia/concept/national-air-quality-index). Concentrations use micrograms per cubic metre. The maximum valid sub-index determines the estimate; missing data causes a visible refresh error. This is a limited modeled estimate, not a substitute for [official CPCB readings](https://airquality.cpcb.gov.in/AQI_India/).
 
 Gemini failures return sanitized error codes and HTTP status in chat, and structured server logs, without API keys or raw upstream messages. Status 503 indicates provider demand; 429 indicates quota/rate limits; 403 indicates access restrictions; 404 indicates model availability. The configured 3.8 model returned 503 during diagnosis; a direct request to `gemini-3.5-flash-lite` succeeded, so it is now the default. Restart local servers after changing `.env`.
+
+## Architecture and evaluation improvements
+
+The quality-focused revision replaces compressed mixed-responsibility code with pure domain rules, an injected chat application service, HTTP/provider adapters, browser storage and air services, and separate rendering features. Household preferences now include travel mode, cooking fuel, and air-cleaner availability. Every daily action explains why it fits, its direct impact, assumptions, and source.
+
+- [Architecture, SOLID boundaries, and operational limits](docs/ARCHITECTURE.md)
+- [Evaluation findings and problem-statement traceability](docs/QUALITY_REVIEW.md)
+- [Security and privacy boundaries](SECURITY.md)
+
+```powershell
+npm ci
+npm run validate
+npm run test:coverage
+```
+
+The submission does not claim a perfect evaluator score, a formal security audit, or full browser/assistive-technology certification. Docker is not required for this Vercel static-plus-functions deployment; runtime dependencies remain zero.

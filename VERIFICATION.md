@@ -1,13 +1,24 @@
 # Verification results
 
-- `npm test`: 17 tests passed, 0 failed. Includes Indian CPCB categories, pollutant interpolation, 24-hour completeness requirements, Gemini request/error handling, PIN validation, missing postal coordinates, directory errors, and curated city coordinates. The runner uses in-process test isolation because child-process spawning is restricted in this workspace.
-- `npm run check`: server and browser JavaScript syntax checks passed.
-- HTTP smoke checks: `/`, `/app.js`, `/style.css`, `/logic.js` returned 200 with correct content types.
-- Assistant endpoint returned 200 with personalized, explicitly labeled local guidance.
-- Invalid AQI request returned 400; missing resource returned 404.
-- Browser visual and interaction verification could not run: browser access host unavailable.
-- Direct Gemini request verified: `gemini-3.8-flash` returned HTTP 503 UNAVAILABLE; `gemini-3.5-flash-lite` returned HTTP 200 with generated text. No keys or raw secret-bearing responses logged.
-- Live Open-Meteo retrieval and Indian AQI estimate calculation verified for Delhi using modeled pollutant data. Browser flow remains unverified.
-- Sites publication could not proceed because the connector failed its initialization handshake. No deployment was created or claimed.
-- Subsequently deployed to Vercel: https://breathewell-prompt-wars-6.vercel.app . Gemini errors are displayed as sanitized diagnostics in chat. `.env` is excluded from uploads.
-- Live Vercel verification after the India update: homepage contains Indian AQI and no US AQI label; `/api/chat` returned HTTP 200 with `Gemini-generated guidance` and an answer.
+## Quality revision
+
+- Automated suite: 49 regression tests covering AQI, personalization, storage, postal lookup, provider behavior, HTTP security boundaries, static delivery, rendered controls, text safety, and application startup.
+- `npm run validate` passed: syntax checks for all JavaScript, ESLint, Prettier, and all 49 regression tests.
+- `npm run test:coverage`: executed application-source coverage report (test files excluded); this does not establish full browser or assistive-technology coverage.
+- All development packages are exact-version locked. No runtime dependencies are introduced.
+- [Architecture review](docs/ARCHITECTURE.md) documents responsibility boundaries, substitution contracts, and deployment limits.
+- [Evaluation review](docs/QUALITY_REVIEW.md) records the observed baseline issues and maps requirements to implementation/tests.
+
+## Deployment verification
+
+Production: https://breathewell-prompt-wars-6.vercel.app
+
+The earlier deployed version was verified for homepage delivery, PIN lookup, Indian AQI labels, and a live Gemini-generated response. The quality revision must pass the same live HTTP checks after deployment.
+
+## Known verification limits
+
+- Browser automation was unavailable in this session environment. LinkeDOM tests validate DOM behavior and structure, not rendering, actual keyboard focus, computed contrast, or screen-reader experience.
+- Regional modeled air data and postal coordinates are approximate; no official-station or health-outcome validation is claimed.
+- Rate-limit tests verify a bounded per-instance guard, not distributed protection or load-test capacity.
+- A previous configured Gemini model returned HTTP 503; `gemini-3.5-flash-lite` was verified with a successful generated answer. Provider availability can change.
+- The external evaluator's rubric implementation is not available. Neither passing tests nor this review guarantees 100/100.

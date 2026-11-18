@@ -1,0 +1,6 @@
+ Tell me how do you score this whole code base with respect to the parameters I gave? How much do you score on every aspect?node_modules
+.vercel
+.env
+.env.*
+coverage
+package-lock.json
